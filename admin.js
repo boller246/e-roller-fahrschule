@@ -1,63 +1,13 @@
-const ADMIN_URL='https://awxymisoktavtelvvzjr.supabase.co';
-const ADMIN_KEY='sb_publishable_H8Q7aNslULZcltTbR1fyFQ_ddaPV3s8';
+const ADMIN_URL='https://pofyhsmewubtskahctsv.supabase.co';
+const ADMIN_KEY='sb_publishable_Zu6YTxFmw3H1A1Blo39o9Q_x5ezokIT';
 const sb=window.supabase.createClient(ADMIN_URL,ADMIN_KEY);
 const root=document.getElementById('adminApp');
 
 function esc(v=''){return String(v).replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
-
-async function render(){
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session) return renderLogin();
-  const {data:me,error:meErr}=await sb.from('eroller_admins').select('user_id').eq('user_id',session.user.id).maybeSingle();
-  if(meErr || !me) return renderNotAdmin(session.user.email||'');
-  return renderDashboard(session.user.email||'');
-}
-
-function renderLogin(){
- root.innerHTML=`<section class="card scorebox" style="text-align:left">
- <p class="muted">GESCHÜTZTER BEREICH</p><h1>Admin-Anmeldung 🔒</h1>
- <p class="muted">Hier siehst du später alle Übungs- und Prüfungsergebnisse.</p>
- <label>E-Mail</label><input id="email" type="email" autocomplete="username" style="width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);margin:6px 0 12px;background:#111827;color:#fff">
- <label>Passwort</label><input id="password" type="password" autocomplete="current-password" style="width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);margin:6px 0 12px;background:#111827;color:#fff">
- <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="login">Anmelden</button><button class="btn secondary" id="signup">Admin-Konto anlegen</button><a class="btn ghost" href="./" style="text-decoration:none">Zur App</a></div>
- <div id="msg" class="feedback hidden"></div></section>`;
- document.getElementById('login').onclick=async()=>{
-   msg('Anmeldung läuft …');
-   const {error}=await sb.auth.signInWithPassword({email:email.value.trim(),password:password.value});
-   if(error) return msg('❌ '+error.message); render();
- };
- document.getElementById('signup').onclick=async()=>{
-   msg('Konto wird angelegt …');
-   const {error}=await sb.auth.signUp({email:email.value.trim(),password:password.value});
-   if(error) return msg('❌ '+error.message);
-   msg('✅ Konto angelegt. Falls Supabase eine Bestätigungs-Mail verlangt, bitte einmal bestätigen. Danach hier anmelden.');
- };
-}
+async function render(){const {data:{session}}=await sb.auth.getSession();if(!session)return renderLogin();const {data:me,error}=await sb.from('eroller_admins').select('user_id').eq('user_id',session.user.id).maybeSingle();if(error||!me)return renderNotAdmin(session.user.email||'');return renderDashboard(session.user.email||'')}
+function renderLogin(){root.innerHTML=`<section class="card scorebox" style="text-align:left"><p class="muted">GESCHÜTZTER BEREICH</p><h1>Admin-Anmeldung 🔒</h1><p class="muted">Hier siehst du alle Übungs- und Prüfungsergebnisse.</p><label>E-Mail</label><input id="email" type="email" autocomplete="username" style="width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);margin:6px 0 12px;background:#111827;color:#fff"><label>Passwort</label><input id="password" type="password" autocomplete="current-password" style="width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);margin:6px 0 12px;background:#111827;color:#fff"><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="login">Anmelden</button><button class="btn secondary" id="signup">Admin-Konto anlegen</button><a class="btn ghost" href="./" style="text-decoration:none">Zur App</a></div><div id="msg" class="feedback hidden"></div></section>`;document.getElementById('login').onclick=async()=>{msg('Anmeldung läuft …');const {error}=await sb.auth.signInWithPassword({email:email.value.trim(),password:password.value});if(error)return msg('❌ '+error.message);render()};document.getElementById('signup').onclick=async()=>{msg('Konto wird angelegt …');const {error}=await sb.auth.signUp({email:email.value.trim(),password:password.value});if(error)return msg('❌ '+error.message);msg('✅ Konto angelegt. Falls eine Bestätigungs-Mail kommt, bitte bestätigen. Danach hier anmelden.')};}
 function msg(t){const m=document.getElementById('msg');if(m){m.textContent=t;m.classList.remove('hidden')}}
-
-function renderNotAdmin(email){
- root.innerHTML=`<section class="card scorebox"><div style="font-size:50px">🔐</div><h1>Konto ist noch kein Admin</h1><p class="muted">Angemeldet als <strong>${esc(email)}</strong>.</p><p>Das Konto funktioniert, muss aber einmal für die E‑Roller-Fahrschule als Admin freigeschaltet werden.</p><div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap"><button class="btn secondary" id="logout">Abmelden</button><a class="btn" href="./" style="text-decoration:none">Zur App</a></div></section>`;
- document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();render()};
-}
-
-async function renderDashboard(email){
- root.innerHTML=`<div class="section-title"><div><p class="muted">ADMIN</p><h1>Ergebnisse</h1><p>Angemeldet als ${esc(email)}</p></div><div style="display:flex;gap:8px"><button class="btn secondary" id="refresh">Aktualisieren</button><button class="btn ghost" id="logout">Abmelden</button></div></div><section class="card"><div id="results" class="muted">Lade Ergebnisse …</div></section>`;
- document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();render()};
- document.getElementById('refresh').onclick=loadResults;
- loadResults();
-}
-
-async function loadResults(){
- const box=document.getElementById('results'); if(!box)return;
- box.innerHTML='Lade Ergebnisse …';
- const {data,error}=await sb.from('eroller_results').select('id,participant_name,mode,score,total,passed,wrong_answers,created_at').order('created_at',{ascending:false}).limit(200);
- if(error){box.innerHTML=`<div class="notice">Ergebnisse konnten nicht geladen werden: ${esc(error.message)}</div>`;return}
- if(!data?.length){box.innerHTML='<p class="muted">Noch keine gespeicherten Ergebnisse.</p>';return}
- box.innerHTML=`<div class="history">${data.map(r=>{
-   const wrong=Array.isArray(r.wrong_answers)?r.wrong_answers:[];
-   return `<details class="history-row" style="display:block"><summary style="cursor:pointer;display:flex;justify-content:space-between;gap:12px"><span><strong>${esc(r.participant_name)}</strong> · ${esc(r.mode)} · ${new Date(r.created_at).toLocaleString('de-DE')}</span><strong>${r.score}/${r.total} ${r.passed?'✅':'❌'}</strong></summary>${wrong.length?`<div style="padding:10px 0 0 10px">${wrong.map(w=>`<div class="muted" style="margin:6px 0">Frage ${w.nr}: ${esc(w.question)}</div>`).join('')}</div>`:'<div class="muted" style="padding:10px 0 0 10px">Keine falschen Antworten.</div>'}</details>`
- }).join('')}</div>`;
-}
-
-sb.auth.onAuthStateChange(()=>setTimeout(render,0));
-render();
+function renderNotAdmin(email){root.innerHTML=`<section class="card scorebox"><div style="font-size:50px">🔐</div><h1>Konto ist noch kein Admin</h1><p class="muted">Angemeldet als <strong>${esc(email)}</strong>.</p><p>Das Konto funktioniert, muss aber einmal für die E‑Roller-Fahrschule als Admin freigeschaltet werden.</p><div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap"><button class="btn secondary" id="logout">Abmelden</button><a class="btn" href="./" style="text-decoration:none">Zur App</a></div></section>`;document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();render()}}
+async function renderDashboard(email){root.innerHTML=`<div class="section-title"><div><p class="muted">ADMIN</p><h1>Ergebnisse</h1><p>Angemeldet als ${esc(email)}</p></div><div style="display:flex;gap:8px"><button class="btn secondary" id="refresh">Aktualisieren</button><button class="btn ghost" id="logout">Abmelden</button></div></div><section class="card"><div id="results" class="muted">Lade Ergebnisse …</div></section>`;document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();render()};document.getElementById('refresh').onclick=loadResults;loadResults()}
+async function loadResults(){const box=document.getElementById('results');if(!box)return;box.innerHTML='Lade Ergebnisse …';const {data,error}=await sb.from('eroller_results').select('id,participant_name,mode,score,total,passed,wrong_answers,created_at').order('created_at',{ascending:false}).limit(200);if(error){box.innerHTML=`<div class="notice">Ergebnisse konnten nicht geladen werden: ${esc(error.message)}</div>`;return}if(!data?.length){box.innerHTML='<p class="muted">Noch keine gespeicherten Ergebnisse.</p>';return}box.innerHTML=`<div class="history">${data.map(r=>{const wrong=Array.isArray(r.wrong_answers)?r.wrong_answers:[];return `<details class="history-row" style="display:block"><summary style="cursor:pointer;display:flex;justify-content:space-between;gap:12px"><span><strong>${esc(r.participant_name)}</strong> · ${esc(r.mode)} · ${new Date(r.created_at).toLocaleString('de-DE')}</span><strong>${r.score}/${r.total} ${r.passed?'✅':'❌'}</strong></summary>${wrong.length?`<div style="padding:10px 0 0 10px">${wrong.map(w=>`<div class="muted" style="margin:6px 0">Frage ${w.nr}: ${esc(w.question)}</div>`).join('')}</div>`:'<div class="muted" style="padding:10px 0 0 10px">Keine falschen Antworten.</div>'}</details>`}).join('')}</div>`}
+sb.auth.onAuthStateChange(()=>setTimeout(render,0));render();
